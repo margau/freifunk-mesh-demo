@@ -10,10 +10,12 @@ uint8_t segmentStart[] = {0,8,24,32,46,60,68,84,92};
 uint8_t segmentStop[] = {7,23,31,45,59,67,83,91,99};
 uint8_t pkg_size = 0;
 uint8_t pkg_length = 5;
-uint8_t pkg_current = 0;
+int8_t pkg_current = 0;
 boolean pkg_running = false;
+boolean pkg_reverse = false;
+char path='a';
 
-uint32_t pathColor, pkgColor, pkgColor2, npathColor;
+uint32_t pathColor, pkgColor, pkgColor2, npathColor, pkgRColor, pkgRColor2;
 void setup() {
   // put your setup code here, to run once:
   strip.begin();
@@ -23,6 +25,8 @@ void setup() {
    npathColor = strip.Color(0, 127, 127);
   pkgColor = strip.Color(0, 255, 0);
   pkgColor2 = strip.Color(0, 127, 0);
+  pkgRColor = strip.Color(255, 0, 0);
+  pkgRColor2 = strip.Color(127, 0, 0);
   initPath();
   Serial.begin(9600);
 }
@@ -55,7 +59,6 @@ void calculatePkg() {
     }
   }
   pkg_running = true;
-  pkg_current=0;
   Serial.println("Package led size: ");
   Serial.println(pkg_size);
 }
@@ -82,7 +85,7 @@ void initPath() {
   isPath[8]=false;
   readPathMetric();
   int minMetric = pathMetric[1]+pathMetric[2]+pathMetric[8];
-  char path = 'a';
+  path = 'a';
   if((pathMetric[3]+pathMetric[8])<minMetric) {
     minMetric=pathMetric[3]+pathMetric[8];
     path='b';
@@ -139,10 +142,6 @@ void initNextPath() {
     minMetric=pathMetric[4]+pathMetric[7];
     path='d';
   }
-  Serial.print("Choosen path ");
-  Serial.print(path);
-  Serial.print(" with metric ");
-  Serial.println(minMetric);
   switch(path) {
     case 'a':
         nextPath[1]=true; nextPath[2]=true; nextPath[8]=true;
@@ -151,15 +150,7 @@ void initNextPath() {
         nextPath[3]=true; nextPath[8]=true;
     break;
     case 'c':
-        nextPath[5]=true; nextPath[6]=true; nextPath[7]=true;
-        Serial.print("5: ");
-        Serial.print(pathMetric[5]);
-        Serial.print(" 6: ");
-        Serial.print(pathMetric[6]);
-        Serial.print(" 7: ");
-        Serial.print(pathMetric[7]);
-        Serial.println();
-                
+        nextPath[5]=true; nextPath[6]=true; nextPath[7]=true;              
     break;
     case 'd': 
         nextPath[4]=true; nextPath[7]=true;
@@ -183,22 +174,66 @@ void displayPath() {
     }
   }
 }
-void setPathPix(int p) {
-  if(p>32) {
-    p=p-32+segmentStart[8]-1;
+void setPathPix(int p, uint32_t color) {
+  int i_p = p;
+  if(p>=8) {
+    p-=8;
+    switch(path) {
+      case 'b':
+        if(p<14) {
+          // segment 3
+          p=segmentStop[3]-p;
+        } else {
+          // segment 8
+          p-=14;
+          p=segmentStop[8]-p;
+        }
+      break;
+      case 'a':
+        if(p<(16+8)) {
+          // Segment 1/2
+          p+=segmentStart[1];
+        } else {
+          // segment 8
+          p-=(16+8);
+          p=segmentStop[8]-p;
+        }
+        
+      break;
+    }
   }
-  strip.setPixelColor(p,pkgColor);
+  if(i_p<pkg_size) {
+    strip.setPixelColor(p,color);
+  }
 }
 void displayPkg() {
-  if(pkg_running==true) {
-    setPathPix(pkg_current);
-    setPathPix(pkg_current-1);
-    setPathPix(pkg_current-2);
-    setPathPix(pkg_current-3);
-    setPathPix(pkg_current-4);
+  if(pkg_running==true&&pkg_reverse==false) {
+    setPathPix(pkg_current,pkgColor);
+    setPathPix(pkg_current-1,pkgColor);
+    setPathPix(pkg_current-2,pkgColor);
+    setPathPix(pkg_current-3,pkgColor);
+    setPathPix(pkg_current-4,pkgColor);
     pkg_current++;
     if(pkg_current-5>pkg_size)  {
+      pkg_reverse=true;
+      initPath();
+      calculatePkg();
+      pkg_current=pkg_size+5;
+    }
+  }
+  if(pkg_running==true&&pkg_reverse==true) {
+    Serial.print("pkg_rev ");
+    Serial.println(pkg_current);
+    setPathPix(pkg_current,pkgRColor);
+    setPathPix(pkg_current-1,pkgRColor);
+    setPathPix(pkg_current-2,pkgRColor);
+    setPathPix(pkg_current-3,pkgRColor);
+    setPathPix(pkg_current-4,pkgRColor);
+    pkg_current--;
+    if(pkg_current+5==0)  {
       pkg_running=false;
+      pkg_reverse=false;
+      pkg_current=0;
     }
   }
 }
@@ -212,7 +247,7 @@ void loop() {
 
   displayPath();
   
-  //displayPkg();
+  displayPkg();
   strip.show();
   delay(25);
 }
