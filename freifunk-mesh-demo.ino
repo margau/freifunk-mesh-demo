@@ -200,6 +200,27 @@ void setPathPix(int p, uint32_t color) {
         }
         
       break;
+      case 'd':
+        if(p<14) {
+          // segment 4 straight
+          p+=segmentStart[4];
+        } else {
+          // segment 7 straight
+          p-=14;
+          p+=segmentStart[7];
+        }
+      break;
+      case 'c':
+        if(p<(16+8)) {
+          // Segment 5/6 reverse
+          p=segmentStop[6]-p;
+        } else {
+          // segment 7 straight
+          p-=(16+8);
+          p+=segmentStart[7];
+        }
+        
+      break;
     }
   }
   if(i_p<pkg_size) {
@@ -209,10 +230,10 @@ void setPathPix(int p, uint32_t color) {
 void displayPkg() {
   if(pkg_running==true&&pkg_reverse==false) {
     setPathPix(pkg_current,pkgColor);
-    setPathPix(pkg_current-1,pkgColor);
-    setPathPix(pkg_current-2,pkgColor);
-    setPathPix(pkg_current-3,pkgColor);
-    setPathPix(pkg_current-4,pkgColor);
+    setPathPix(pkg_current-1,pkgColor2);
+    setPathPix(pkg_current-2,pkgColor2);
+    setPathPix(pkg_current-3,pkgColor2);
+    setPathPix(pkg_current-4,pkgColor2);
     pkg_current++;
     if(pkg_current-5>pkg_size)  {
       pkg_reverse=true;
@@ -225,10 +246,10 @@ void displayPkg() {
     Serial.print("pkg_rev ");
     Serial.println(pkg_current);
     setPathPix(pkg_current,pkgRColor);
-    setPathPix(pkg_current-1,pkgRColor);
-    setPathPix(pkg_current-2,pkgRColor);
-    setPathPix(pkg_current-3,pkgRColor);
-    setPathPix(pkg_current-4,pkgRColor);
+    setPathPix(pkg_current-1,pkgRColor2);
+    setPathPix(pkg_current-2,pkgRColor2);
+    setPathPix(pkg_current-3,pkgRColor2);
+    setPathPix(pkg_current-4,pkgRColor2);
     pkg_current--;
     if(pkg_current+5==0)  {
       pkg_running=false;
